@@ -33,9 +33,7 @@ All arguments are forwarded to the underlying `rtcwake` utility, for detailed ti
 
 ## Operation
 
-The EPSON RX8130CE RTC supports alarm interrupts on a minute granularity, and also the fact that shutdown and boot up are non-zero time operations a 2 minutes minimum sleep time has been selected and is enforced by this wrapper. If less than 2 minutes specified with either time spec mode, then the program returns an error.
+The EPSON RX8130CE RTC supports alarm interrupts on a minute granularity, and also the fact that shutdown and boot up are non-zero time operations we decided to use the RTC's periodic wakeup timer functionality so that in case a very near timepoint is specified, then there is zero chance missing the wakeup interrup.
 
-Also the RTC has a maximum alarm window of a calendar month. This constraint is also enforced by this wrapper, if a longer sleep period is requested, then the program returns an error.
-
-Otherwise if a valid time-point is specified, then the RTC alarm is armed, and the wrapper will invoke `poweroff --halt` which halts the system using the `sytemctl` utility on the normal Raspbian OS iamge. There's an extreme low power (XLP) PIC-18-Q20 family MCU onboard, that reacts to the RTC interrupt with our [default Firmware](https://github.com/EffectiveRange/fw-mrhat), and executes the wake-from-halt procedure - which is pulling the SCL line low - that in turn boots up the Raspberry Pi.
+If a valid time-point is specified, then the RTC alarm is armed the program uses the driver's ioctl API for setting the wakeup timer. Based on the mode specified the program then halts the system using the `sytemctl` utility on the normal Raspbian OS iamge. There's an extreme low power (XLP) PIC-18-Q20 family MCU onboard, that reacts to the RTC interrupt with our [default Firmware](https://github.com/EffectiveRange/fw-mrhat), and executes the wake-from-halt procedure - which is pulling the SCL line low - that in turn boots up the Raspberry Pi.
 
