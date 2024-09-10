@@ -14,7 +14,8 @@ bool MrHatIntegration::api_impl(bool set) {
   httplib::Client cli("localhost", port);
   const auto endpoint = fmt::format("/api/register/{}/{}/{}", rst_action_reg,
                                     rst_action_bit, set ? 1 : 0);
-  if (auto res = cli.Get(endpoint); res && res->status == 200) {
+  if (auto res = cli.Post(endpoint);
+      res && (res->status >= 200 && res->status < 300)) {
     return true;
   } else {
     std::cerr << fmt::format("error sending reset on halt action to "

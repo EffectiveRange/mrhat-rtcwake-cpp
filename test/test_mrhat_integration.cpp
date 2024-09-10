@@ -30,24 +30,24 @@ std::unique_ptr<MockServer> get_mock_server(bool return_error = false) {
     throw std::runtime_error("Failed to set up mock server");
   }
   auto mock = std::make_unique<MockServer>(std::move(svr));
-  mock->svr->Get("/api/register/8/0/1",
-                 [mck_ = mock.get(), return_error](const httplib::Request &req,
-                                                   httplib::Response &res) {
-                   if (return_error) {
-                     res.status = 403;
-                   } else {
-                     mck_->reg_val = 1;
-                   }
-                 });
-  mock->svr->Get("/api/register/8/0/0",
-                 [mck_ = mock.get(), return_error](const httplib::Request &req,
-                                                   httplib::Response &res) {
-                   if (return_error) {
-                     res.status = 403;
-                   } else {
-                     mck_->reg_val = 0;
-                   }
-                 });
+  mock->svr->Post("/api/register/8/0/1",
+                  [mck_ = mock.get(), return_error](const httplib::Request &req,
+                                                    httplib::Response &res) {
+                    if (return_error) {
+                      res.status = 403;
+                    } else {
+                      mck_->reg_val = 1;
+                    }
+                  });
+  mock->svr->Post("/api/register/8/0/0",
+                  [mck_ = mock.get(), return_error](const httplib::Request &req,
+                                                    httplib::Response &res) {
+                    if (return_error) {
+                      res.status = 403;
+                    } else {
+                      mck_->reg_val = 0;
+                    }
+                  });
   mock->svr->set_error_handler(
       [mck_ = mock.get()](const httplib::Request &req, httplib::Response &res) {
         mck_->error = true;
