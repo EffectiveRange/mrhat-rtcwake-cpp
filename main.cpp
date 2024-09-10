@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include <irtc.hpp>
+#include <mrhat_integration.hpp>
 #include <rtc_utils.hpp>
 namespace fs = std::filesystem;
 
@@ -71,6 +72,16 @@ std::unique_ptr<AugmentedParser> get_parser() {
   program->add_argument("-f", "--force")
       .help("use --force flag when entering the specified mode")
       .flag();
+  program->add_argument("--mrhat-daemon-port")
+      .help("Listen port of mrhat-daemon to signal reset on halt at.")
+      .default_value(9000);
+  program->add_argument("--rst-action-register")
+      .help("Reset action register on the MrHat device.")
+      .default_value(8);
+  program->add_argument("--rst-action-bit")
+      .help(
+          "Reset action bit in the reset action register on the MrHat device.")
+      .default_value(0);
   auto &date_group = program->add_mutually_exclusive_group();
   date_group.add_argument("--date").help(
       "Set the wakeup time to the value of the timestamp.");
@@ -122,7 +133,7 @@ template <typename T>
 concept String = std::convertible_to<T, std::string>;
 
 template <String Prog, String... Args>
-[[noreturn]] void do_exec(Prog &&prog, Args &&...args) {
+auto do_exec(Prog &&prog, Args &&...args) {
   std::string ps(std::forward<Prog>(prog));
   std::array as = {std::string(std::forward<Args>(args))...};
   char *execargs[sizeof...(Args) + 1] = {};
@@ -132,7 +143,7 @@ template <String Prog, String... Args>
   auto cr = rg::copy(rg::begin(cstr), rg::end(cstr), rg::begin(execargs));
   *cr.out = nullptr;
   execv(ps.c_str(), execargs);
-  throw std::system_error(errno, std::generic_category());
+  return errno;
 }
 
 auto format_date(auto d) { return date::format("%a %d %b %X %Z %Y", d); }
@@ -179,11 +190,22 @@ int main(int argc, char *argv[]) try {
                              rtc->name())
               << format_date(rtc_to_zoned(*datespec, *rtc)) << '\n';
     if (mode != "no") {
-      if (parser["--force"] == true) {
-        do_exec("/usr/sbin/poweroff", "--halt", "--force");
+      MrHatIntegration mrhat(parser.get<int>("--mrhat-daemon-port"),
+                             parser.get<int>("--rst-action-register"),
+                             parser.get<int>("--rst-action-bit"));
+      const auto rst = mrhat.signal_reset_on_halt();
+      if (!rst) {
+        std::cerr << "!!!WARNING: could not set reset on halt bit!\n";
       }
-      do_exec("/usr/sbin/poweroff", "--halt");
-      throw std::system_error(errno, std::generic_category());
+      const auto err = parser["--force"] == true
+                           ? do_exec("/usr/sbin/poweroff", "--halt", "--force")
+                           : do_exec("/usr/sbin/poweroff", "--halt");
+
+      if (rst && !mrhat.clear_reset_on_halt()) {
+        std::cerr
+            << "!!!WARNING: reset on halt bit active, must clean manually!\n";
+      }
+      throw std::system_error(err, std::generic_category());
     }
     return 0;
   }
