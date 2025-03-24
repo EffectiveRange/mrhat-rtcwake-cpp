@@ -21,7 +21,7 @@ bool MrHatIntegration::api_impl(bool set) {
     std::cerr << fmt::format("error sending reset on halt action to "
                              "http://localhost:{}{} status:{} code:{}\n",
                              port, endpoint, res ? res->status : -1,
-                             res.error());
+                             static_cast<int>(res.error()));
     return false;
   }
 }

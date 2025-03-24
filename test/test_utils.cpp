@@ -249,7 +249,7 @@ TEST_CASE("absolute date parsing", "[utils]") {
 
 auto get_mock_rtc(std::string_view adjtype = "UTC") {
   using namespace std::string_view_literals;
-  auto adjfile = R"-(0.000000 1723331760 0.000000
+  constexpr auto adjfile = R"-(0.000000 1723331760 0.000000
 1723331760
 {})-"sv;
   return MockRTC::get("rtc0", fmt::format(adjfile, adjtype));
