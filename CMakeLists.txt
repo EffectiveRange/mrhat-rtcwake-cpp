@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 
-set(mrhat-rtcwake-ver 0.4.0)
+set(mrhat-rtcwake-ver 0.4.1)
 
 project(mrhat-rtcwake VERSION ${mrhat-rtcwake-ver} DESCRIPTION "rtcwake compatible uitlity to use the RTC wakeup functionality on the MrHAT RPI extension hat")
 
