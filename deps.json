@@ -7,11 +7,13 @@
                 "armhf",
                 "arm64"
             ]
-        }
+        },
+        "er-hwinfo-db"
     ],
     "build_deps": [
         "libfmt-dev",
         "catch2",
-        "librange-v3-dev"
+        "librange-v3-dev",
+        "er-hwinfo-dev"
     ]
 }
