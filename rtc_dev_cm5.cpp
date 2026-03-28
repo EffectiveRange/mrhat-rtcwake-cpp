@@ -8,8 +8,6 @@
 
 #include <fmt/format.h>
 
-#include <rtc-rx8130.h>
-
 class RTC : public IRTC {
 public:
   explicit RTC(std::string_view name, bool m_is_utc = true)
@@ -47,26 +45,33 @@ public:
     return rtc_tm;
   }
   void set_wakeup(rtc_time const &time) override {
-    if (ioctl(m_fd, SE_RTC_WKTIMER_SET, &time) != 0) {
-      throw std::system_error(
-          errno, std::generic_category(),
-          static_cast<std::string>("SE_RTC_WKTIMER_SET ioctl"));
+    struct rtc_wkalrm alarm{};
+    alarm.time = time;
+    alarm.enabled = 1;
+    if (ioctl(m_fd, RTC_WKALM_SET, &alarm) != 0) {
+      throw std::system_error(errno, std::generic_category(),
+                              static_cast<std::string>("RTC_WKALM_SET ioctl"));
     }
   }
   void clear_wakeup() override {
-    if (ioctl(m_fd, SE_RTC_WKTIMER_SET, nullptr) != 0) {
+    rtc_wkalrm alarm{};
+    if (ioctl(m_fd, RTC_WKALM_RD, &alarm) != 0) {
+      throw std::system_error(errno, std::generic_category(),
+                              static_cast<std::string>("RTC_WKALM_RD ioctl"));
+    }
+    alarm.enabled = 0;
+    if (ioctl(m_fd, RTC_WKALM_SET, &alarm) != 0) {
       throw std::system_error(
           errno, std::generic_category(),
-          static_cast<std::string>("SE_RTC_WKTIMER_SET clear ioctl"));
+          static_cast<std::string>("RTC_WKALM_SET clear ioctl"));
     }
   }
 
   rtc_wkalrm get_wakeup() const override {
     rtc_wkalrm rtc_tm{};
-    if (ioctl(m_fd, SE_RTC_WKTIMER_GET, &rtc_tm)) {
-      throw std::system_error(
-          errno, std::generic_category(),
-          static_cast<std::string>("SE_RTC_WKTIMER_GET ioctl"));
+    if (ioctl(m_fd, RTC_WKALM_RD, &rtc_tm)) {
+      throw std::system_error(errno, std::generic_category(),
+                              static_cast<std::string>("RTC_WKALM_RD ioctl"));
     }
     return rtc_tm;
   }

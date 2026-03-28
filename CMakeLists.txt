@@ -51,18 +51,20 @@ FetchContent_MakeAvailable(httplib)
 
 
 find_path(RTC_RX8130_INCLUDE_DIR rtc-rx8130.h HINTS /usr/include)
-
-if(NOT RTC_RX8130_INCLUDE_DIR)
-message(INFO ":rtc-rx8130.h not found, using mock implementation")
+if(CMAKE_CXX_COMPILER_TARGET STREQUAL "amd64")
+message(STATUS "building for x86, using mock device")
 SET(RTC_SOURCE rtc_mock.cpp)
+elseif(CMAKE_CXX_COMPILER_TARGET STREQUAL "arm64")
+message(STATUS "building for arm64, using CM5 real device")
+SET(RTC_SOURCE rtc_dev_cm5.cpp)
 else()
-message(INFO ":rtc-rx8130.h  found, using real device")
+message(STATUS "building for armhf, using real device")
 SET(RTC_SOURCE rtc_dev.cpp)
 endif()
 
 
 add_library(mrhat-rtcwake-lib STATIC ${RTC_SOURCE} rtc_tools.cpp mrhat_integration.cpp)
-target_link_libraries(mrhat-rtcwake-lib PUBLIC date::date date::date-tz fmt::fmt httplib::httplib er-hwinfo::lib-er-hwinfo)
+target_link_libraries(mrhat-rtcwake-lib PUBLIC date::date date::date-tz fmt::fmt httplib::httplib)
 target_include_directories(mrhat-rtcwake-lib PUBLIC .)
 target_compile_definitions(mrhat-rtcwake-lib PUBLIC -DMRHATRTCWAKE_VER="${mrhat-rtcwake-ver}" FMT_HEADER_ONLY)
 
