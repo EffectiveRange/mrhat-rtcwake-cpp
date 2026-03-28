@@ -10,6 +10,8 @@
 
 #include <rtc-rx8130.h>
 
+#include <er/hwinfo.hpp>
+
 class RTC : public IRTC {
 public:
   explicit RTC(std::string_view name, bool m_is_utc = true)
@@ -37,7 +39,7 @@ public:
     if (m_fd >= 0)
       close(m_fd);
   }
-  rtc_time get_time() const override {
+  rtc_time get_time() const final {
     rtc_time rtc_tm{};
     auto retval = ioctl(m_fd, RTC_RD_TIME, &rtc_tm);
     if (retval == -1) {
@@ -46,6 +48,28 @@ public:
     }
     return rtc_tm;
   }
+
+  Clock type() const noexcept final {
+    return m_is_utc ? IRTC::Clock::UTC : IRTC::Clock::LOCAL;
+  }
+
+protected:
+  int m_fd = -1;
+  bool m_is_utc = true;
+  std::string m_name;
+};
+
+class MrCMRTC : public RTC {
+public:
+  explicit MrCMRTC(std::string_view name, bool m_is_utc = true)
+      : RTC(name, m_is_utc) {}
+};
+
+class MrHatRTC : public RTC {
+public:
+  explicit MrHatRTC(std::string_view name, bool m_is_utc = true)
+      : RTC(name, m_is_utc) {}
+
   void set_wakeup(rtc_time const &time) override {
     if (ioctl(m_fd, SE_RTC_WKTIMER_SET, &time) != 0) {
       throw std::system_error(
@@ -70,18 +94,10 @@ public:
     }
     return rtc_tm;
   }
-
-  Clock type() const noexcept override {
-    return m_is_utc ? IRTC::Clock::UTC : IRTC::Clock::LOCAL;
-  }
-
-private:
-  int m_fd = -1;
-  bool m_is_utc = true;
-  std::string m_name;
 };
 
 std::unique_ptr<IRTC> IRTC::get(std::string_view name, std::string_view adj) {
+  er::hwinfo hwinfo;
   return std::make_unique<RTC>(name);
 };
 

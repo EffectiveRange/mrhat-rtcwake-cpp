@@ -1,5 +1,5 @@
 #include "irtc.hpp"
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <rtc_utils.hpp>
 

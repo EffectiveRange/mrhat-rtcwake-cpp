@@ -107,5 +107,6 @@
 			"--malloc-trim",
 			"--log=error"
 		],
+		"editor.formatOnSave": true
 	}
 }

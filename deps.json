@@ -4,8 +4,7 @@
         {
             "name": "mrhat-rx8130",
             "arch": [
-                "armhf",
-                "arm64"
+                "armhf"
             ]
         },
         "er-hwinfo-db"

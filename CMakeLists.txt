@@ -24,6 +24,8 @@ find_package(fmt REQUIRED)
 
 find_package(Catch2  REQUIRED)
 
+find_package(er-hwinfo REQUIRED)
+
 # fetch latest argparse
 include(FetchContent)
 FetchContent_Declare(
@@ -60,7 +62,7 @@ endif()
 
 
 add_library(mrhat-rtcwake-lib STATIC ${RTC_SOURCE} rtc_tools.cpp mrhat_integration.cpp)
-target_link_libraries(mrhat-rtcwake-lib PUBLIC date::date date::date-tz fmt::fmt httplib::httplib)
+target_link_libraries(mrhat-rtcwake-lib PUBLIC date::date date::date-tz fmt::fmt httplib::httplib er-hwinfo::lib-er-hwinfo)
 target_include_directories(mrhat-rtcwake-lib PUBLIC .)
 target_compile_definitions(mrhat-rtcwake-lib PUBLIC -DMRHATRTCWAKE_VER="${mrhat-rtcwake-ver}" FMT_HEADER_ONLY)
 
