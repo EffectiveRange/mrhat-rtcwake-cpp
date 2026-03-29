@@ -136,11 +136,13 @@ template <String Prog, String... Args>
 auto do_exec(Prog &&prog, Args &&...args) {
   std::string ps(std::forward<Prog>(prog));
   std::array as = {std::string(std::forward<Args>(args))...};
-  char *execargs[sizeof...(Args) + 1] = {};
+  char *execargs[sizeof...(Args) + 2] = {};
+  execargs[0] = ps.data();
   namespace rg = std::ranges;
   namespace rgv = std::ranges::views;
   auto cstr = as | rgv::transform([](auto &s) { return s.data(); });
-  auto cr = rg::copy(rg::begin(cstr), rg::end(cstr), rg::begin(execargs));
+  auto cr =
+      rg::copy(rg::begin(cstr), rg::end(cstr), std::next(rg::begin(execargs)));
   *cr.out = nullptr;
   execv(ps.c_str(), execargs);
   return errno;
@@ -157,7 +159,7 @@ int main(int argc, char *argv[]) try {
   const auto verbose = verbosity(aug_parser.verbosity);
 
   if (parser["--list-modes"] == true) {
-    std::cout << "standby no disable show'\n";
+    std::cout << "standby no disable show\n";
     return 0;
   }
 
