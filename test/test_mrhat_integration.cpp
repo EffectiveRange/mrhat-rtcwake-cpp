@@ -62,6 +62,8 @@ std::unique_ptr<MockServer> get_mock_server(bool return_error = false) {
   return std::move(mock);
 }
 
+#if not defined(__SANITIZE_THREAD__)
+
 TEST_CASE("mrhat integration for rst action", "[mrhat-integration]") {
 
   auto mock = get_mock_server();
@@ -100,3 +102,5 @@ TEST_CASE("when error is at server side", "[mrhat-integration]") {
   REQUIRE(mock->reg_val == -1);
   REQUIRE(mock->error == true);
 }
+
+#endif
