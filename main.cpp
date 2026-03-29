@@ -109,16 +109,16 @@ std::string read_adjfile(fs::path adjfile) {
 }
 
 std::optional<rtc_time> get_date_spec(argparse::ArgumentParser const &parser,
-                                      IRTC const &rtc) {
+                                      IRTC const &rtc, rtc_time tm_now) {
   if (parser.is_used("--date")) {
     const auto d = parser.get<std::string>("--date");
-    return resolve_parsed_time(parse_time(d), rtc);
+    return resolve_parsed_time(parse_time(d), rtc, tm_now);
   }
   if (parser.is_used("--seconds")) {
     const auto secs = parser.get<std::string>("--seconds");
     std::string_view s(secs);
     const auto val = parse_chars<unsigned long>(s.begin(), s.end());
-    return resolve_parsed_time(std::chrono::seconds{val}, rtc);
+    return resolve_parsed_time(std::chrono::seconds{val}, rtc, tm_now);
   }
   if (parser.is_used("--time")) {
     const auto t = parser.get<std::string>("--time");
@@ -164,9 +164,9 @@ int main(int argc, char *argv[]) try {
   auto rtc = IRTC::get(parser.get<std::string>("--device"),
                        read_adjfile(parser.get<std::string>("--adjfile")));
 
-  const auto datespec = get_date_spec(parser, *rtc);
-
   const auto rtctime = rtc->get_time();
+  const auto datespec = get_date_spec(parser, *rtc, rtctime);
+
   if (pparser->verbosity) {
     std::cout << "Current RTC time is(local):"
               << format_date(rtc_to_zoned(rtctime, *rtc)) << '\n';
@@ -185,25 +185,27 @@ int main(int argc, char *argv[]) try {
     rtc->clear_wakeup();
     return 0;
   } else if (datespec.has_value() && (mode == "no"s || mode == "standby"s)) {
+    if (rtc_to_zoned(*datespec, *rtc).get_local_time() <=
+        rtc_to_zoned(rtctime, *rtc).get_local_time()) {
+      throw std::runtime_error("wakeup time is in the past or now");
+    }
     rtc->set_wakeup(*datespec);
     std::cout << fmt::format("mrhat-rtcwake: wakeup using /dev/{} at ",
                              rtc->name())
               << format_date(rtc_to_zoned(*datespec, *rtc)) << '\n';
     if (mode != "no") {
-      MrHatIntegration mrhat(parser.get<int>("--mrhat-daemon-port"),
-                             parser.get<int>("--rst-action-register"),
-                             parser.get<int>("--rst-action-bit"));
-      const auto rst = mrhat.signal_reset_on_halt();
-      if (!rst) {
-        std::cerr << "!!!WARNING: could not set reset on halt bit!\n";
-      }
+      IRTC::IntegrationInfo const info{parser.get<int>("--mrhat-daemon-port"),
+                                       parser.get<int>("--rst-action-register"),
+                                       parser.get<int>("--rst-action-bit")};
+      bool const notified = rtc->notify_listener(info);
       const auto err = parser["--force"] == true
                            ? do_exec("/usr/sbin/poweroff", "--halt", "--force")
                            : do_exec("/usr/sbin/poweroff", "--halt");
 
-      if (rst && !mrhat.clear_reset_on_halt()) {
-        std::cerr
-            << "!!!WARNING: reset on halt bit active, must clean manually!\n";
+      // if do_exec does not fail we shouldn't be here, so we know that an error
+      // occurred and the reset on halt bit
+      if (notified) {
+        rtc->unnotify_listener(info);
       }
       throw std::system_error(err, std::generic_category());
     }

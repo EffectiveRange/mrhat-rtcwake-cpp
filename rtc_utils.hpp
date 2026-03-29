@@ -31,7 +31,7 @@ inline auto parse_chars(It first, Sen last) {
 inline std::chrono::system_clock::time_point rtc_to_sys(rtc_time const &tm,
                                                         IRTC const &rtc) {
 
-  struct tm time {};
+  struct tm time{};
   std::memcpy(&time, &tm, std::min(sizeof(tm), sizeof(time)));
   const auto ts =
       rtc.type() == IRTC::Clock::LOCAL ? mktime(&time) : timegm(&time);
@@ -40,7 +40,7 @@ inline std::chrono::system_clock::time_point rtc_to_sys(rtc_time const &tm,
 
 inline rtc_time sys_to_rtc(std::chrono::system_clock::time_point tp,
                            IRTC const &rtc) {
-  struct tm time {};
+  struct tm time{};
   rtc_time rtc_tm{};
   const auto timep = std::chrono::system_clock::to_time_t(tp);
   auto func = rtc.type() == IRTC::Clock::UTC ? gmtime_r : localtime_r;
@@ -105,7 +105,7 @@ inline sys_duration parse_relative_time(std::string_view date_in) {
 }
 
 inline std::tm get_tm_now() {
-  struct tm tmnow {};
+  struct tm tmnow{};
   const auto tnow = time(nullptr);
   if (localtime_r(&tnow, &tmnow) == nullptr) {
     throw std::runtime_error("failed to get current time");
@@ -120,7 +120,7 @@ parse_time_abs(std::string_view date_in, std::tm tm_now = get_tm_now()) {
                                 "%Y-%m-%d %H:%M"s, "%Y-%m-%d"s,
                                 "%H:%M:%S"s,       "%H:%M"s};
   const std::string datestr(date_in);
-  struct tm t {};
+  struct tm t{};
   for (auto spec : specstrs) {
     if (const auto endp = strptime(datestr.c_str(), spec.c_str(), &t);
         endp == datestr.c_str() + datestr.size()) {
@@ -155,11 +155,13 @@ inline parsed_time parse_time(std::string_view date_in) {
   return parse_time_abs(date_in);
 }
 
-inline rtc_time resolve_parsed_time(parsed_time const &tm, IRTC const &_rtc) {
+inline rtc_time resolve_parsed_time(parsed_time const &tm, IRTC const &_rtc,
+                                    rtc_time tm_now) {
   struct {
     IRTC const &rtc;
+    rtc_time tm_now;
     rtc_time operator()(sys_duration const &d) const {
-      const auto curr_time = rtc_to_sys(rtc.get_time(), rtc);
+      const auto curr_time = rtc_to_sys(tm_now, rtc);
       const auto wakeup = curr_time + d;
       return sys_to_rtc(wakeup, rtc);
     }
@@ -168,12 +170,12 @@ inline rtc_time resolve_parsed_time(parsed_time const &tm, IRTC const &_rtc) {
     }
     rtc_time operator()(Tomorrow const &) const {
       using namespace date;
-      const auto local = rtc_to_zoned(rtc.get_time(), rtc).get_local_time();
+      const auto local = rtc_to_zoned(tm_now, rtc).get_local_time();
       const auto tomorrow = local + days{1};
       const auto midnight = floor<days>(tomorrow);
       return sys_to_rtc(make_zoned(current_zone(), midnight).get_sys_time(),
                         rtc);
     }
-  } resolver{_rtc};
+  } resolver{_rtc, tm_now};
   return std::visit(resolver, tm);
 }

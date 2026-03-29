@@ -80,6 +80,15 @@ public:
     return m_is_utc ? IRTC::Clock::UTC : IRTC::Clock::LOCAL;
   }
 
+  bool notify_listener(IntegrationInfo const &) const noexcept final {
+    // nothing to do here;
+    return true;
+  }
+  bool unnotify_listener(IntegrationInfo const &) const noexcept final {
+    // no thing to do here;
+    return true;
+  }
+
 private:
   int m_fd = -1;
   bool m_is_utc = true;
@@ -87,7 +96,7 @@ private:
 };
 
 std::unique_ptr<IRTC> IRTC::get(std::string_view name, std::string_view adj) {
-  return std::make_unique<RTC>(name);
+  return std::make_unique<RTC>(name, parse_adjfile(adj) == Clock::UTC);
 };
 
 std::unique_ptr<MockRTC> get(std::string_view name, std::string_view adj) {

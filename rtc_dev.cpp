@@ -1,6 +1,8 @@
 #include "irtc.hpp"
+#include "mrhat_integration.hpp"
 
 #include <fcntl.h>
+#include <iostream>
 #include <sys/ioctl.h>
 #include <system_error>
 #include <unistd.h>
@@ -75,6 +77,24 @@ public:
     return m_is_utc ? IRTC::Clock::UTC : IRTC::Clock::LOCAL;
   }
 
+  bool notify_listener(IntegrationInfo const &info) const noexcept final {
+    MrHatIntegration mrhat(info.port, info.reg, info.bit);
+    const auto rst = mrhat.signal_reset_on_halt();
+    if (!rst) {
+      std::cerr << "!!!WARNING: could not set reset on halt bit!\n";
+    }
+    return rst;
+  }
+
+  bool unnotify_listener(IntegrationInfo const &info) const noexcept final {
+    MrHatIntegration mrhat(info.port, info.reg, info.bit);
+    const auto rst = mrhat.clear_reset_on_halt();
+    if (!rst) {
+      std::cerr << "!!!WARNING: could not clear reset on halt bit!\n";
+    }
+    return rst;
+  }
+
 private:
   int m_fd = -1;
   bool m_is_utc = true;
@@ -82,7 +102,7 @@ private:
 };
 
 std::unique_ptr<IRTC> IRTC::get(std::string_view name, std::string_view adj) {
-  return std::make_unique<RTC>(name);
+  return std::make_unique<RTC>(name, parse_adjfile(adj) == Clock::UTC);
 };
 
 std::unique_ptr<MockRTC> get(std::string_view name, std::string_view adj) {

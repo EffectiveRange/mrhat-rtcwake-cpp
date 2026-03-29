@@ -26,6 +26,14 @@ struct MockRTCImpl : MockRTC {
     m_wakeup.pending = 1;
   }
   std::string_view name() const noexcept override { return "mock"; }
+  bool notify_listener(IntegrationInfo const &) const noexcept final {
+    // nothing to do here;
+    return true;
+  }
+  bool unnotify_listener(IntegrationInfo const &) const noexcept final {
+    // no thing to do here;
+    return true;
+  }
 
 private:
   rtc_time m_tm{};

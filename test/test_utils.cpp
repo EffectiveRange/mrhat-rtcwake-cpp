@@ -281,8 +281,9 @@ TEST_CASE("resolve parsed time", "[utils]") {
   SECTION("with duration seconds") {
     auto rtc = get_mock_rtc();
     rtc->set_time(get_rtc_time(2024, 8, 18, 21, 22, 32));
+    auto rtcnow = rtc->get_time();
     SECTION("within minute") {
-      const auto rtc_time = resolve_parsed_time(5s, *rtc);
+      const auto rtc_time = resolve_parsed_time(5s, *rtc, rtcnow);
       REQUIRE(rtc_time.tm_year == 124);
       REQUIRE(rtc_time.tm_mon == 7);
       REQUIRE(rtc_time.tm_mday == 18);
@@ -291,7 +292,7 @@ TEST_CASE("resolve parsed time", "[utils]") {
       REQUIRE(rtc_time.tm_sec == 37);
     }
     SECTION("cross minute") {
-      const auto rtc_time = resolve_parsed_time(28s, *rtc);
+      const auto rtc_time = resolve_parsed_time(28s, *rtc, rtcnow);
       REQUIRE(rtc_time.tm_year == 124);
       REQUIRE(rtc_time.tm_mon == 7);
       REQUIRE(rtc_time.tm_mday == 18);
@@ -300,7 +301,8 @@ TEST_CASE("resolve parsed time", "[utils]") {
       REQUIRE(rtc_time.tm_sec == 0);
     }
     SECTION("cross hour") {
-      const auto rtc_time = resolve_parsed_time(ch::seconds{38 * 60}, *rtc);
+      const auto rtc_time =
+          resolve_parsed_time(ch::seconds{38 * 60}, *rtc, rtcnow);
       REQUIRE(rtc_time.tm_year == 124);
       REQUIRE(rtc_time.tm_mon == 7);
       REQUIRE(rtc_time.tm_mday == 18);
@@ -309,7 +311,8 @@ TEST_CASE("resolve parsed time", "[utils]") {
       REQUIRE(rtc_time.tm_sec == 32);
     }
     SECTION("cross day") {
-      const auto rtc_time = resolve_parsed_time(ch::seconds{3 * 60 * 60}, *rtc);
+      const auto rtc_time =
+          resolve_parsed_time(ch::seconds{3 * 60 * 60}, *rtc, rtcnow);
       REQUIRE(rtc_time.tm_year == 124);
       REQUIRE(rtc_time.tm_mon == 7);
       REQUIRE(rtc_time.tm_mday == 19);
@@ -319,7 +322,7 @@ TEST_CASE("resolve parsed time", "[utils]") {
     }
     SECTION("cross month") {
       const auto rtc_time =
-          resolve_parsed_time(ch::seconds{14 * 24 * 60 * 60}, *rtc);
+          resolve_parsed_time(ch::seconds{14 * 24 * 60 * 60}, *rtc, rtcnow);
       REQUIRE(rtc_time.tm_year == 124);
       REQUIRE(rtc_time.tm_mon == 8);
       REQUIRE(rtc_time.tm_mday == 1);
@@ -329,7 +332,8 @@ TEST_CASE("resolve parsed time", "[utils]") {
     }
     SECTION("cross year") {
       rtc->set_time(get_rtc_time(2024, 12, 31, 21, 22, 32));
-      const auto rtc_time = resolve_parsed_time(ch::seconds{3 * 60 * 60}, *rtc);
+      const auto rtc_time =
+          resolve_parsed_time(ch::seconds{3 * 60 * 60}, *rtc, rtc->get_time());
       REQUIRE(rtc_time.tm_year == 125);
       REQUIRE(rtc_time.tm_mon == 0);
       REQUIRE(rtc_time.tm_mday == 1);
@@ -347,7 +351,8 @@ TEST_CASE("resolve parsed time", "[utils]") {
     const auto curr_rtc_time = get_rtc_time(2024, 8, 18, 23, 22, 32);
     const auto zrtc = rtc_to_zoned(curr_rtc_time, *rtc);
     rtc->set_time(curr_rtc_time);
-    const auto rtc_time = resolve_parsed_time(Tomorrow{}, *rtc);
+    const auto rtc_time =
+        resolve_parsed_time(Tomorrow{}, *rtc, rtc->get_time());
     const auto rtc_local = zrtc.get_local_time();
     const auto today = date::floor<date::days>(rtc_local);
     const auto tomorrow = today + date::days{1};
