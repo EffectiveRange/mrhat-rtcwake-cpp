@@ -24,8 +24,6 @@ find_package(fmt REQUIRED)
 
 find_package(Catch2  REQUIRED)
 
-find_package(er-hwinfo REQUIRED)
-
 # fetch latest argparse
 include(FetchContent)
 FetchContent_Declare(
