@@ -6,13 +6,11 @@
             "arch": [
                 "armhf"
             ]
-        },
-        "er-hwinfo-db"
+        }
     ],
     "build_deps": [
         "libfmt-dev",
         "catch2",
-        "librange-v3-dev",
-        "er-hwinfo-dev"
+        "librange-v3-dev"
     ]
 }

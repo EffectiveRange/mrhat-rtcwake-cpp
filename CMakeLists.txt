@@ -50,16 +50,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(httplib)
 
 
-find_path(RTC_RX8130_INCLUDE_DIR rtc-rx8130.h HINTS /usr/include)
-if(CMAKE_CXX_COMPILER_TARGET STREQUAL "amd64")
-message(STATUS "building for x86, using mock device")
-SET(RTC_SOURCE rtc_mock.cpp)
-elseif(CMAKE_CXX_COMPILER_TARGET STREQUAL "arm64")
+if(CMAKE_CXX_COMPILER_TARGET STREQUAL "arm64")
 message(STATUS "building for arm64, using CM5 real device")
 SET(RTC_SOURCE rtc_dev_cm5.cpp)
-else()
+elseif(CMAKE_CXX_COMPILER_TARGET STREQUAL "armhf")
 message(STATUS "building for armhf, using real device")
 SET(RTC_SOURCE rtc_dev.cpp)
+else()
+message(STATUS "building for x86, using mock device")
+SET(RTC_SOURCE rtc_mock.cpp)
 endif()
 
 
